@@ -20,6 +20,7 @@ const ui = {
   manualAddress: document.querySelector("#manual-address"),
   ownAddress: document.querySelector("#own-address"),
   refreshButton: document.querySelector("#refresh-button"),
+  appVersion: document.querySelector("#app-version"),
   downloadsButton: document.querySelector("#downloads-button"),
   quitButton: document.querySelector("#quit-button"),
   quitDialog: document.querySelector("#quit-dialog"),
@@ -85,12 +86,19 @@ function setRefreshLoading(loading) {
   ui.refreshButton.setAttribute("aria-busy", loading ? "true" : "false");
 }
 
+function formatAppVersion(value) {
+  if (typeof value !== "string") return "dev";
+  const version = value.trim();
+  return version || "dev";
+}
+
 function render() {
   if (!state) return;
   ui.selfStatus.replaceChildren();
   const dot = document.createElement("span");
   dot.className = "status-dot";
   ui.selfStatus.append(dot, document.createTextNode(`Đang chạy trên ${state.self.name}`));
+  ui.appVersion.textContent = `Phiên bản ${formatAppVersion(state.version)}`;
 
   const peers = state.peers || [];
   if (!peers.some((peer) => peer.id === selectedPeerId)) {

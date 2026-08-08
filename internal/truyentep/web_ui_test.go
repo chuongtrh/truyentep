@@ -1,10 +1,80 @@
 package truyentep
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
 )
+
+func TestWebUIShowsRuntimeVersion(t *testing.T) {
+	page, err := webAssets.ReadFile("web/index.html")
+	if err != nil {
+		t.Fatalf("read embedded web UI: %v", err)
+	}
+	script, err := webAssets.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatalf("read embedded web UI script: %v", err)
+	}
+	stylesheet, err := webAssets.ReadFile("web/style.css")
+	if err != nil {
+		t.Fatalf("read embedded web UI stylesheet: %v", err)
+	}
+
+	footer := regexp.MustCompile(`(?s)<footer\b[^>]*>(.*?)</footer>`).FindStringSubmatch(string(page))
+	if len(footer) != 2 {
+		t.Fatal("web UI must have a footer")
+	}
+	if !regexp.MustCompile(`<p\s+id="app-version"[^>]*>\s*Phiên bản …\s*</p>`).MatchString(footer[1]) {
+		t.Error("footer must include a semantic #app-version paragraph with its initial loading text")
+	}
+
+	js := string(script)
+	if !strings.Contains(js, `appVersion: document.querySelector("#app-version")`) {
+		t.Error("web UI script must query the app version element")
+	}
+	for _, contract := range []string{
+		`function formatAppVersion(value)`,
+		`typeof value !== "string"`,
+		`const version = value.trim()`,
+		`return version || "dev"`,
+		`ui.appVersion.textContent = ` + "`" + `Phiên bản ${formatAppVersion(state.version)}` + "`",
+	} {
+		if !strings.Contains(js, contract) {
+			t.Errorf("runtime version rendering is missing contract %q", contract)
+		}
+	}
+	if strings.Contains(js, "version.json") {
+		t.Error("web UI must use runtime state instead of reading version.json")
+	}
+	if !regexp.MustCompile(`(?s)\.app-version\s*\{[^}]*color:\s*var\(--label-secondary\);[^}]*\}`).Match(stylesheet) {
+		t.Error("app version must use the higher-contrast shared light/dark text color token")
+	}
+}
+
+func TestStateReportsRuntimeVersion(t *testing.T) {
+	expectedVersion := Version
+
+	app := testApp(t, "Mac", strings.Repeat("9", 32), t.TempDir(), &fakeClipboard{})
+	request := httptest.NewRequest(http.MethodGet, "/api/state", nil)
+	request.RemoteAddr = "127.0.0.1:1234"
+	response := httptest.NewRecorder()
+	app.Handler().ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("state status = %d, body = %s", response.Code, response.Body.String())
+	}
+	var payload struct {
+		Version string `json:"version"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		t.Fatalf("decode state response: %v", err)
+	}
+	if payload.Version != expectedVersion {
+		t.Fatalf("state version = %q, want runtime Version %q", payload.Version, expectedVersion)
+	}
+}
 
 func TestWebUISemanticContract(t *testing.T) {
 	page, err := webAssets.ReadFile("web/index.html")

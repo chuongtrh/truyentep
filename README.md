@@ -297,18 +297,20 @@ truyentep/
 
 Yêu cầu macOS 12+, Xcode Command Line Tools và Go 1.22+.
 
+Trước khi phát hành, chỉ sửa `version.json`: `version` là phiên bản ứng dụng (ví dụ `0.3.0`), còn `build` phải là JSON integer trong phạm vi `1..9999`. Kịch bản build kiểm tra định dạng hai giá trị trước khi biên dịch, rồi dùng chúng cho version nhúng trong binary và metadata của app bundle.
+
 ```bash
 xcode-select --install
 brew install go
 ./scripts/build-macos.sh
 ```
 
-Kết quả nằm trong `dist/TruyenTep-macOS-v0.2.0.zip`. Kịch bản build:
+Kết quả nằm trong `dist/TruyenTep-macOS-v<version>.zip`, với `<version>` được đọc từ `version.json`. Kịch bản build:
 
 1. Cross-compile Go core cho `arm64` và `amd64`.
 2. Ghép hai binary thành Universal Binary bằng `lipo`.
 3. Biên dịch lớp vỏ Swift bằng `swiftc`.
-4. Tạo `.icns` từ ảnh nguồn, ghép app bundle và cập nhật version.
+4. Tạo `.icns` từ ảnh nguồn, ghép app bundle và cập nhật version cùng build number.
 5. Ký ad-hoc bằng `codesign`.
 6. Tạo ZIP chỉ chứa ứng dụng, không kèm mã nguồn hoặc tài liệu dự án.
 
