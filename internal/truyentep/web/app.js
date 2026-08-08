@@ -34,7 +34,6 @@ let toastTimer = null;
 let pollTimer = null;
 let stateLoadsInFlight = 0;
 let stateLoadSequence = 0;
-let latestSettledStateLoad = 0;
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
@@ -55,13 +54,11 @@ async function loadState(showFailure = false) {
   setRefreshLoading(true);
   try {
     const nextState = await api("/api/state");
-    if (loadId < latestSettledStateLoad) return;
-    latestSettledStateLoad = loadId;
+    if (loadId !== stateLoadSequence) return;
     state = nextState;
     render();
   } catch (error) {
-    if (loadId < latestSettledStateLoad) return;
-    latestSettledStateLoad = loadId;
+    if (loadId !== stateLoadSequence) return;
     if (showFailure) showToast(error.message, true);
     ui.selfStatus.innerHTML = '<span class="status-dot"></span>Mất kết nối với ứng dụng';
   } finally {
