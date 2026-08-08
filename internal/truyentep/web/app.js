@@ -114,10 +114,12 @@ function renderPeers(peers) {
     const avatar = document.createElement("span");
     avatar.className = "peer-avatar";
     avatar.textContent = initials(peer.name);
-    const presence = document.createElement("span");
-    presence.className = "peer-presence";
-    presence.setAttribute("aria-hidden", "true");
-    avatar.append(presence);
+    if (!peer.manual) {
+      const presence = document.createElement("span");
+      presence.className = "peer-presence";
+      presence.setAttribute("aria-hidden", "true");
+      avatar.append(presence);
+    }
     const copy = document.createElement("span");
     copy.className = "peer-copy";
     const name = document.createElement("strong");
@@ -448,4 +450,7 @@ function showToast(message, error = false) {
 }
 
 loadState(true);
-pollTimer = window.setInterval(loadState, 2000);
+pollTimer = window.setInterval(() => {
+  if (stateLoadsInFlight > 0) return;
+  loadState();
+}, 2000);

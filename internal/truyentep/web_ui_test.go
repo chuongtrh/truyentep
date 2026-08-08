@@ -105,7 +105,7 @@ func TestWebUIInteractionContract(t *testing.T) {
 
 	peers := functionSource("function renderPeers", "function renderActions")
 	for _, pattern := range []string{
-		`const presence = document\.createElement\("span"\);\s*presence\.className = "peer-presence";\s*presence\.setAttribute\("aria-hidden", "true"\);\s*avatar\.append\(presence\)`,
+		`if \(!peer\.manual\) \{\s*const presence = document\.createElement\("span"\);\s*presence\.className = "peer-presence";\s*presence\.setAttribute\("aria-hidden", "true"\);\s*avatar\.append\(presence\);\s*\}`,
 		`button\.className = ` + "`" + `peer-card\$\{peer\.id === selectedPeerId \? " selected" : ""\}`,
 		`button\.setAttribute\("aria-pressed", peer\.id === selectedPeerId \? "true" : "false"\)`,
 		`button\.addEventListener\("click", \(\) => \{\s*selectedPeerId = peer\.id;\s*saveSelectedPeer\(\);\s*render\(\)`,
@@ -135,5 +135,14 @@ func TestWebUIInteractionContract(t *testing.T) {
 	}
 	if strings.Contains(eventIcon, "innerHTML") {
 		t.Error("event SVG helper must not construct icons with innerHTML")
+	}
+
+	for _, pattern := range []string{
+		`ui\.refreshButton\.addEventListener\("click", \(\) => loadState\(true\)\)`,
+		`pollTimer = window\.setInterval\(\(\) => \{\s*if \(stateLoadsInFlight > 0\) return;\s*loadState\(\);\s*\}, 2000\)`,
+	} {
+		if !regexp.MustCompile(pattern).MatchString(js) {
+			t.Errorf("state refresh scheduling is missing %q", pattern)
+		}
 	}
 }
