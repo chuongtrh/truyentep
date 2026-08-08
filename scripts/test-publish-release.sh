@@ -110,6 +110,23 @@ test_duplicate_remote_tag() {
   fi
 }
 
+test_duplicate_local_tag() {
+  new_fixture
+  git -C "$repo" tag -a v0.3.0 -m "local existing"
+
+  run_publish
+
+  if [[ "$publish_status" -ne 0 ]] &&
+    grep -q 'v0.3.0' "$output_file" &&
+    grep -qi 'đã tồn tại\|da ton tai\|already exists' "$output_file" &&
+    ! grep -Eq '^(go |version-test|build|gh release)' "$command_log" 2>/dev/null; then
+    pass "local tag matching version.json is rejected before build"
+  else
+    fail "local tag matching version.json is rejected before build"
+    sed -n '1,120p' "$output_file" >&2
+  fi
+}
+
 test_dirty_worktree() {
   new_fixture
   printf 'dirty\n' >> "$repo/README.md"
@@ -191,6 +208,7 @@ if [[ ! -x "$publish_source" ]]; then
 fi
 
 test_duplicate_remote_tag
+test_duplicate_local_tag
 test_dirty_worktree
 test_build_failure_does_not_create_tag
 test_successful_publish

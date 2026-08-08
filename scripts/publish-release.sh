@@ -29,6 +29,10 @@ trap 'rm -rf "$temporary"' EXIT
 IFS="$(printf '\t')" read -r version build < "$temporary/version-values"
 tag="v$version"
 
+if git show-ref --verify --quiet "refs/tags/$tag"; then
+  error "tag $tag đã tồn tại trong repository local; version $version trong version.json đã được dùng."
+fi
+
 if git ls-remote --exit-code --tags origin "refs/tags/$tag" > "$temporary/remote-tag" 2>/dev/null; then
   error "tag $tag đã tồn tại trên remote origin; version $version trong version.json đã được publish."
 else
