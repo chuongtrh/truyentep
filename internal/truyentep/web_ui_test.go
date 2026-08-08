@@ -69,10 +69,19 @@ func TestWebUIInteractionContract(t *testing.T) {
 		t.Errorf("loadState must guard both success and failure against the latest started request, got %d guards", count)
 	}
 	for _, pattern := range []string{
-		`const loadId\s*=\s*\+\+stateLoadSequence;\s*stateLoadsInFlight \+= 1;\s*setRefreshLoading\(true\)`,
-		`const nextState\s*=\s*await api\("/api/state"\);\s*if \(loadId !== stateLoadSequence\) return;\s*state\s*=\s*nextState;\s*render\(\)`,
-		`catch \(error\) \{\s*if \(loadId !== stateLoadSequence\) return;\s*if \(showFailure\) showToast\(error\.message, true\);\s*ui\.selfStatus\.innerHTML`,
-		`finally \{\s*stateLoadsInFlight\s*=\s*Math\.max\(0, stateLoadsInFlight - 1\);\s*setRefreshLoading\(stateLoadsInFlight > 0\);\s*\}`,
+		`let activeStateLoadController = null`,
+		`const STATE_LOAD_TIMEOUT_MS = [1-9][0-9]{2,4}`,
+	} {
+		if !regexp.MustCompile(pattern).MatchString(js) {
+			t.Errorf("state request lifecycle is missing %q", pattern)
+		}
+	}
+	for _, pattern := range []string{
+		`const loadId\s*=\s*\+\+stateLoadSequence;\s*activeStateLoadController\?\.abort\(\);\s*const controller = new AbortController\(\);\s*activeStateLoadController = controller;\s*stateLoadsInFlight \+= 1;\s*setRefreshLoading\(true\)`,
+		`let timedOut = false;\s*const timeoutTimer = window\.setTimeout\(\(\) => \{\s*timedOut = true;\s*controller\.abort\(\);\s*\}, STATE_LOAD_TIMEOUT_MS\)`,
+		`const nextState\s*=\s*await api\("/api/state", \{ signal: controller\.signal \}\);\s*if \(loadId !== stateLoadSequence\) return;\s*state\s*=\s*nextState;\s*render\(\)`,
+		`catch \(error\) \{\s*if \(loadId !== stateLoadSequence\) return;\s*const message = timedOut \? "Không thể cập nhật trạng thái\. Vui lòng thử lại\." : error\.message;\s*if \(showFailure\) showToast\(message, true\);\s*ui\.selfStatus\.innerHTML`,
+		`finally \{\s*window\.clearTimeout\(timeoutTimer\);\s*if \(activeStateLoadController === controller\) activeStateLoadController = null;\s*stateLoadsInFlight\s*=\s*Math\.max\(0, stateLoadsInFlight - 1\);\s*setRefreshLoading\(stateLoadsInFlight > 0\);\s*\}`,
 	} {
 		if !regexp.MustCompile(pattern).MatchString(loadState) {
 			t.Errorf("loadState does not satisfy interaction contract %q", pattern)

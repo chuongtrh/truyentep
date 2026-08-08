@@ -34,8 +34,10 @@ let toastTimer = null;
 let pollTimer = null;
 let stateLoadsInFlight = 0;
 let stateLoadSequence = 0;
+let activeStateLoadController = null;
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const STATE_LOAD_TIMEOUT_MS = 8000;
 
 async function api(path, options = {}) {
   const method = options.method || "GET";
@@ -50,18 +52,29 @@ async function api(path, options = {}) {
 
 async function loadState(showFailure = false) {
   const loadId = ++stateLoadSequence;
+  activeStateLoadController?.abort();
+  const controller = new AbortController();
+  activeStateLoadController = controller;
   stateLoadsInFlight += 1;
   setRefreshLoading(true);
+  let timedOut = false;
+  const timeoutTimer = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, STATE_LOAD_TIMEOUT_MS);
   try {
-    const nextState = await api("/api/state");
+    const nextState = await api("/api/state", { signal: controller.signal });
     if (loadId !== stateLoadSequence) return;
     state = nextState;
     render();
   } catch (error) {
     if (loadId !== stateLoadSequence) return;
-    if (showFailure) showToast(error.message, true);
+    const message = timedOut ? "Không thể cập nhật trạng thái. Vui lòng thử lại." : error.message;
+    if (showFailure) showToast(message, true);
     ui.selfStatus.innerHTML = '<span class="status-dot"></span>Mất kết nối với ứng dụng';
   } finally {
+    window.clearTimeout(timeoutTimer);
+    if (activeStateLoadController === controller) activeStateLoadController = null;
     stateLoadsInFlight = Math.max(0, stateLoadsInFlight - 1);
     setRefreshLoading(stateLoadsInFlight > 0);
   }
