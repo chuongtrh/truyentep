@@ -71,7 +71,7 @@ async function loadState(showFailure = false) {
     if (loadId !== stateLoadSequence) return;
     const message = timedOut ? "Không thể cập nhật trạng thái. Vui lòng thử lại." : error.message;
     if (showFailure) showToast(message, true);
-    ui.selfStatus.innerHTML = '<span class="status-dot"></span>Mất kết nối với ứng dụng';
+    ui.selfStatus.innerHTML = '<span class="status-dot offline"></span>Mất kết nối với ứng dụng';
   } finally {
     window.clearTimeout(timeoutTimer);
     if (activeStateLoadController === controller) activeStateLoadController = null;
@@ -168,7 +168,6 @@ function renderActions(peers) {
   ui.fileInput.disabled = !enabled;
   ui.dropZone.classList.toggle("disabled", !enabled);
   ui.dropZone.setAttribute("aria-disabled", enabled ? "false" : "true");
-  ui.dropZone.tabIndex = enabled ? 0 : -1;
 }
 
 function renderEvents(events) {
@@ -284,13 +283,6 @@ ui.fileInput.addEventListener("change", () => {
   const files = Array.from(ui.fileInput.files || []);
   ui.fileInput.value = "";
   sendFiles(files);
-});
-
-ui.dropZone.addEventListener("keydown", (event) => {
-  if ((event.key === "Enter" || event.key === " ") && !ui.fileInput.disabled) {
-    event.preventDefault();
-    ui.fileInput.click();
-  }
 });
 
 ["dragenter", "dragover"].forEach((type) => {

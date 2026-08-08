@@ -179,6 +179,11 @@ p {
   box-shadow: 0 0 0 3px rgba(48, 164, 108, 0.12);
 }
 
+.status-dot.offline {
+  background: var(--destructive);
+  box-shadow: 0 0 0 3px rgba(197, 50, 45, 0.12);
+}
+
 .privacy-badge {
   gap: 5px;
   max-width: none;
@@ -724,16 +729,22 @@ input::placeholder {
   transform: translateY(-2px) scale(1.005);
 }
 
+.drop-zone:focus-within {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .drop-zone input {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
+  cursor: pointer;
+}
+
+.drop-zone input:disabled {
+  cursor: not-allowed;
   pointer-events: none;
 }
 

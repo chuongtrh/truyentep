@@ -155,3 +155,67 @@ func TestWebUIInteractionContract(t *testing.T) {
 		}
 	}
 }
+
+func TestWebUIFileActionUsesOneNativeFocusTarget(t *testing.T) {
+	page, err := webAssets.ReadFile("web/index.html")
+	if err != nil {
+		t.Fatalf("read embedded web UI: %v", err)
+	}
+	script, err := webAssets.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatalf("read embedded web UI script: %v", err)
+	}
+	stylesheet, err := webAssets.ReadFile("web/style.css")
+	if err != nil {
+		t.Fatalf("read embedded web UI stylesheet: %v", err)
+	}
+
+	html := string(page)
+	js := string(script)
+	css := string(stylesheet)
+	dropZone := regexp.MustCompile(`<label\s+id="drop-zone"([^>]*)>`).FindStringSubmatch(html)
+	if len(dropZone) != 2 {
+		t.Fatal("file action must remain a label for the native file input")
+	}
+	if regexp.MustCompile(`(?i)\btabindex\s*=`).MatchString(dropZone[1]) {
+		t.Error("file action label must not add a second keyboard focus target")
+	}
+	if !regexp.MustCompile(`<input\s+id="file-input"\s+type="file"\s+multiple\s+disabled>`).MatchString(html) {
+		t.Error("file action must use the native disabled file input as its only focus target")
+	}
+	for _, forbidden := range []string{
+		`ui.dropZone.tabIndex`,
+		`ui.dropZone.addEventListener("keydown"`,
+		`ui.fileInput.click()`,
+	} {
+		if strings.Contains(js, forbidden) {
+			t.Errorf("file action must not use redundant label keyboard activation %q", forbidden)
+		}
+	}
+	for _, pattern := range []string{
+		`(?s)\.drop-zone input\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*opacity:\s*0;[^}]*cursor:\s*pointer;[^}]*\}`,
+		`(?s)\.drop-zone:focus-within\s*\{[^}]*outline:\s*3px solid var\(--focus-ring\);[^}]*outline-offset:\s*2px;[^}]*\}`,
+	} {
+		if !regexp.MustCompile(pattern).MatchString(css) {
+			t.Errorf("file action CSS is missing the native focus architecture %q", pattern)
+		}
+	}
+}
+
+func TestWebUIStateLoadFailureUsesOfflineStatus(t *testing.T) {
+	script, err := webAssets.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatalf("read embedded web UI script: %v", err)
+	}
+	stylesheet, err := webAssets.ReadFile("web/style.css")
+	if err != nil {
+		t.Fatalf("read embedded web UI stylesheet: %v", err)
+	}
+
+	if !strings.Contains(string(script), `<span class="status-dot offline"></span>Mất kết nối với ứng dụng`) {
+		t.Error("state load failure must render a semantically offline status dot")
+	}
+	if !regexp.MustCompile(`(?s)\.status-dot\.offline\s*\{[^}]*background:[^;}]+;[^}]*box-shadow:[^;}]+;[^}]*\}`).Match(stylesheet) {
+		t.Error("offline status dot must have a distinct non-green visual")
+	}
+}
