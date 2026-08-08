@@ -15,7 +15,6 @@ func TestWebUISemanticContract(t *testing.T) {
 	html := string(page)
 	for _, hook := range []string{
 		`class="app-status"`,
-		`class="step-number"`,
 		`id="action-hint"`,
 		`class="action-grid"`,
 		`aria-describedby="action-hint file-action-description"`,
@@ -26,7 +25,19 @@ func TestWebUISemanticContract(t *testing.T) {
 		}
 	}
 
-	remoteAsset := regexp.MustCompile(`(?i)(?:href|src)=["']https?://`)
+	stepBadge := regexp.MustCompile(`<span class="step-number"([^>]*)>([^<]*)</span>`)
+	stepBadges := stepBadge.FindAllStringSubmatch(html, -1)
+	if len(stepBadges) != 2 {
+		t.Errorf("web UI must have exactly two step badges, got %d", len(stepBadges))
+	}
+	ariaHidden := regexp.MustCompile(`(?i)aria-hidden\s*=\s*["']true["']`)
+	for _, badge := range stepBadges {
+		if ariaHidden.MatchString(badge[1]) {
+			t.Errorf("step badge %q must be available to screen readers", strings.TrimSpace(badge[2]))
+		}
+	}
+
+	remoteAsset := regexp.MustCompile(`(?i)(?:href|src|srcset)\s*=\s*["'][^"']*https?://`)
 	if remoteAsset.MatchString(html) {
 		t.Error("web UI must not load assets over http:// or https://")
 	}
