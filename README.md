@@ -314,11 +314,27 @@ Kết quả nằm trong `dist/TruyenTep-macOS-v<version>.zip`, với `<version>`
 5. Ký ad-hoc bằng `codesign`.
 6. Tạo ZIP chỉ chứa ứng dụng, không kèm mã nguồn hoặc tài liệu dự án.
 
+## Phát hành lên GitHub
+
+Sau khi cập nhật và commit `version.json`, cài đặt GitHub CLI rồi đăng nhập một lần:
+
+```bash
+brew install gh
+gh auth login
+./scripts/publish-release.sh
+```
+
+Script đọc version trực tiếp từ `version.json`, chạy test, build file ZIP, tạo annotated tag `v<version>`, push tag lên `origin`, rồi tạo GitHub Release với release notes tự sinh và đính kèm ZIP. Working tree phải sạch và commit hiện tại phải trùng với branch upstream trên `origin`.
+
+Trước khi build hoặc tạo tag, script kiểm tra tag tương ứng trực tiếp trên `origin`. Nếu version trong `version.json` đã tồn tại, quá trình dừng với lỗi và không ghi đè release cũ. Nếu bước tạo GitHub Release thất bại sau khi tag đã được push, tag được giữ nguyên và script in lệnh `gh release create` để thử upload lại an toàn.
+
 ## Kiểm thử
 
 ```bash
 go test ./...
 go vet ./...
+./scripts/test-version-config.sh
+./scripts/test-publish-release.sh
 ./scripts/test-build-macos-no-source.sh
 ```
 
