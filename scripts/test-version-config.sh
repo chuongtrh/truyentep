@@ -81,6 +81,14 @@ missing_build="$TMP_DIR/missing-build.json"
 write_fixture "$missing_build" '{"version":"1.2.3"}'
 assert_rejected "missing build field" "$missing_build"
 
+newline_version="$TMP_DIR/newline-version.json"
+write_fixture "$newline_version" '{"version":"1.2.3\nunsafe","build":3}'
+assert_rejected "version containing escaped newline" "$newline_version"
+
+carriage_return_version="$TMP_DIR/carriage-return-version.json"
+write_fixture "$carriage_return_version" '{"version":"1.2.3\runsafe","build":3}'
+assert_rejected "version containing escaped carriage return" "$carriage_return_version"
+
 for invalid_version in \
   '1.2' \
   'v1.2.3' \

@@ -37,7 +37,13 @@ build=$("$PLUTIL" -extract build raw -expect integer -o - -- "$CONFIG_PATH" 2>/d
   error "thiếu trường build dạng số nguyên."
 
 version_pattern='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?(\+[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$'
-printf '%s\n' "$version" | grep -Eq "$version_pattern" ||
+case "$version" in
+  *[!0-9A-Za-z.+-]*)
+    error "version chứa ký tự không an toàn."
+    ;;
+esac
+
+[[ "$version" =~ $version_pattern ]] ||
   error "version không đúng định dạng X.Y.Z[-prerelease][+metadata]."
 
 case "$build" in
