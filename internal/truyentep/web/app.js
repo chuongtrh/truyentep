@@ -86,13 +86,19 @@ function setRefreshLoading(loading) {
   ui.refreshButton.setAttribute("aria-busy", loading ? "true" : "false");
 }
 
+function formatAppVersion(value) {
+  if (typeof value !== "string") return "dev";
+  const version = value.trim();
+  return version || "dev";
+}
+
 function render() {
   if (!state) return;
   ui.selfStatus.replaceChildren();
   const dot = document.createElement("span");
   dot.className = "status-dot";
   ui.selfStatus.append(dot, document.createTextNode(`Đang chạy trên ${state.self.name}`));
-  ui.appVersion.textContent = `Phiên bản ${state.version || "dev"}`;
+  ui.appVersion.textContent = `Phiên bản ${formatAppVersion(state.version)}`;
 
   const peers = state.peers || [];
   if (!peers.some((peer) => peer.id === selectedPeerId)) {

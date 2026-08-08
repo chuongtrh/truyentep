@@ -906,7 +906,7 @@ footer {
 
 .app-version {
   margin-top: 4px;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
   font-variant-numeric: tabular-nums;
 }
 

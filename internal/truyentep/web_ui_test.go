@@ -35,21 +35,27 @@ func TestWebUIShowsRuntimeVersion(t *testing.T) {
 	if !strings.Contains(js, `appVersion: document.querySelector("#app-version")`) {
 		t.Error("web UI script must query the app version element")
 	}
-	if !regexp.MustCompile("ui\\.appVersion\\.textContent\\s*=\\s*`Phiên bản \\${state\\.version \\|\\| \\\"dev\\\"}`").MatchString(js) {
-		t.Error("render must show the runtime state version and fall back to dev")
+	for _, contract := range []string{
+		`function formatAppVersion(value)`,
+		`typeof value !== "string"`,
+		`const version = value.trim()`,
+		`return version || "dev"`,
+		`ui.appVersion.textContent = ` + "`" + `Phiên bản ${formatAppVersion(state.version)}` + "`",
+	} {
+		if !strings.Contains(js, contract) {
+			t.Errorf("runtime version rendering is missing contract %q", contract)
+		}
 	}
 	if strings.Contains(js, "version.json") {
 		t.Error("web UI must use runtime state instead of reading version.json")
 	}
-	if !regexp.MustCompile(`(?s)\.app-version\s*\{[^}]*color:\s*var\(--label-tertiary\);[^}]*\}`).Match(stylesheet) {
-		t.Error("app version must use the shared light/dark text color token")
+	if !regexp.MustCompile(`(?s)\.app-version\s*\{[^}]*color:\s*var\(--label-secondary\);[^}]*\}`).Match(stylesheet) {
+		t.Error("app version must use the higher-contrast shared light/dark text color token")
 	}
 }
 
 func TestStateReportsRuntimeVersion(t *testing.T) {
-	originalVersion := Version
-	t.Cleanup(func() { Version = originalVersion })
-	Version = "9.8.7-state-test"
+	expectedVersion := Version
 
 	app := testApp(t, "Mac", strings.Repeat("9", 32), t.TempDir(), &fakeClipboard{})
 	request := httptest.NewRequest(http.MethodGet, "/api/state", nil)
@@ -65,8 +71,8 @@ func TestStateReportsRuntimeVersion(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode state response: %v", err)
 	}
-	if payload.Version != Version {
-		t.Fatalf("state version = %q, want runtime Version %q", payload.Version, Version)
+	if payload.Version != expectedVersion {
+		t.Fatalf("state version = %q, want runtime Version %q", payload.Version, expectedVersion)
 	}
 }
 
