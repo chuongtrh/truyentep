@@ -5,6 +5,7 @@ const ui = {
   peerList: document.querySelector("#peer-list"),
   emptyPeers: document.querySelector("#empty-peers"),
   selectedLabel: document.querySelector("#selected-label"),
+  actionHint: document.querySelector("#action-hint"),
   clipboardButton: document.querySelector("#clipboard-button"),
   dropZone: document.querySelector("#drop-zone"),
   fileInput: document.querySelector("#file-input"),
@@ -31,6 +32,12 @@ let selectedPeerId = localStorage.getItem("truyen-tep-selected-peer") || "";
 let sending = false;
 let toastTimer = null;
 let pollTimer = null;
+let stateLoadsInFlight = 0;
+let stateLoadSequence = 0;
+let activeStateLoadController = null;
+
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const STATE_LOAD_TIMEOUT_MS = 8000;
 
 async function api(path, options = {}) {
   const method = options.method || "GET";
@@ -44,14 +51,38 @@ async function api(path, options = {}) {
 }
 
 async function loadState(showFailure = false) {
+  const loadId = ++stateLoadSequence;
+  activeStateLoadController?.abort();
+  const controller = new AbortController();
+  activeStateLoadController = controller;
+  stateLoadsInFlight += 1;
+  setRefreshLoading(true);
+  let timedOut = false;
+  const timeoutTimer = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, STATE_LOAD_TIMEOUT_MS);
   try {
-    const nextState = await api("/api/state");
+    const nextState = await api("/api/state", { signal: controller.signal });
+    if (loadId !== stateLoadSequence) return;
     state = nextState;
     render();
   } catch (error) {
-    if (showFailure) showToast(error.message, true);
-    ui.selfStatus.innerHTML = '<span class="status-dot"></span>Mất kết nối với ứng dụng';
+    if (loadId !== stateLoadSequence) return;
+    const message = timedOut ? "Không thể cập nhật trạng thái. Vui lòng thử lại." : error.message;
+    if (showFailure) showToast(message, true);
+    ui.selfStatus.innerHTML = '<span class="status-dot offline"></span>Mất kết nối với ứng dụng';
+  } finally {
+    window.clearTimeout(timeoutTimer);
+    if (activeStateLoadController === controller) activeStateLoadController = null;
+    stateLoadsInFlight = Math.max(0, stateLoadsInFlight - 1);
+    setRefreshLoading(stateLoadsInFlight > 0);
   }
+}
+
+function setRefreshLoading(loading) {
+  ui.refreshButton.classList.toggle("loading", loading);
+  ui.refreshButton.setAttribute("aria-busy", loading ? "true" : "false");
 }
 
 function render() {
@@ -96,6 +127,12 @@ function renderPeers(peers) {
     const avatar = document.createElement("span");
     avatar.className = "peer-avatar";
     avatar.textContent = initials(peer.name);
+    if (!peer.manual) {
+      const presence = document.createElement("span");
+      presence.className = "peer-presence";
+      presence.setAttribute("aria-hidden", "true");
+      avatar.append(presence);
+    }
     const copy = document.createElement("span");
     copy.className = "peer-copy";
     const name = document.createElement("strong");
@@ -120,11 +157,17 @@ function renderActions(peers) {
   const selected = peers.find((peer) => peer.id === selectedPeerId);
   const enabled = Boolean(selected) && !sending;
   ui.selectedLabel.textContent = selected ? `Đến ${selected.name}` : "Chưa chọn máy";
+  if (!selected) {
+    ui.actionHint.textContent = "Chọn một máy nhận để bật các lựa chọn gửi.";
+  } else if (sending) {
+    ui.actionHint.textContent = `Đang gửi đến ${selected.name}…`;
+  } else {
+    ui.actionHint.textContent = `Sẵn sàng gửi đến ${selected.name}.`;
+  }
   ui.clipboardButton.disabled = !enabled || !state.clipboardAvailable;
   ui.fileInput.disabled = !enabled;
   ui.dropZone.classList.toggle("disabled", !enabled);
   ui.dropZone.setAttribute("aria-disabled", enabled ? "false" : "true");
-  ui.dropZone.tabIndex = enabled ? 0 : -1;
 }
 
 function renderEvents(events) {
@@ -135,7 +178,7 @@ function renderEvents(events) {
     item.className = "event-item";
     const icon = document.createElement("span");
     icon.className = `event-icon${event.status === "failed" ? " failed" : ""}`;
-    icon.textContent = event.kind === "clipboard" ? "⌘" : event.direction === "received" ? "↓" : "↑";
+    icon.append(createEventIcon(event));
     const copy = document.createElement("span");
     copy.className = "event-copy";
     const title = document.createElement("strong");
@@ -150,6 +193,30 @@ function renderEvents(events) {
     item.append(icon, copy, time);
     ui.eventList.append(item);
   });
+}
+
+function createEventIcon(event) {
+  const svg = document.createElementNS(SVG_NAMESPACE, "svg");
+  svg.setAttribute("viewBox", "0 0 20 20");
+  svg.setAttribute("aria-hidden", "true");
+
+  let paths;
+  if (event.status === "failed") {
+    paths = ["M10 3.25a6.75 6.75 0 1 1 0 13.5 6.75 6.75 0 0 1 0-13.5Z", "M10 6.5v4.25", "M10 13.5h.01"];
+  } else if (event.kind === "clipboard") {
+    paths = ["M7.25 5.25h-1A1.25 1.25 0 0 0 5 6.5v9.25h10V6.5a1.25 1.25 0 0 0-1.25-1.25h-1", "M7.5 3.75h5v3h-5z"];
+  } else if (event.direction === "received") {
+    paths = ["M10 3.5v8", "m6.75 8.25 3.25 3.25 3.25-3.25", "M4.5 13v2.5h11V13"];
+  } else {
+    paths = ["M10 11.5v-8", "m6.75 6.75 3.25-3.25 3.25 3.25", "M4.5 13v2.5h11V13"];
+  }
+
+  paths.forEach((data) => {
+    const path = document.createElementNS(SVG_NAMESPACE, "path");
+    path.setAttribute("d", data);
+    svg.append(path);
+  });
+  return svg;
 }
 
 function renderOwnAddress() {
@@ -216,13 +283,6 @@ ui.fileInput.addEventListener("change", () => {
   const files = Array.from(ui.fileInput.files || []);
   ui.fileInput.value = "";
   sendFiles(files);
-});
-
-ui.dropZone.addEventListener("keydown", (event) => {
-  if ((event.key === "Enter" || event.key === " ") && !ui.fileInput.disabled) {
-    event.preventDefault();
-    ui.fileInput.click();
-  }
 });
 
 ["dragenter", "dragover"].forEach((type) => {
@@ -395,5 +455,7 @@ function showToast(message, error = false) {
 }
 
 loadState(true);
-pollTimer = window.setInterval(loadState, 2000);
-
+pollTimer = window.setInterval(() => {
+  if (stateLoadsInFlight > 0) return;
+  loadState();
+}, 2000);
