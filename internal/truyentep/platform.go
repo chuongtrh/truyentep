@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -17,6 +18,7 @@ func (SystemClipboard) Read(ctx context.Context) (string, error) {
 		return "", ErrClipboardUnsupported
 	}
 	cmd := exec.CommandContext(ctx, "/usr/bin/pbpaste")
+	cmd.Env = clipboardEnvironment(os.Environ())
 	var output bytes.Buffer
 	cmd.Stdout = &output
 	if err := cmd.Run(); err != nil {
@@ -30,11 +32,23 @@ func (SystemClipboard) Write(ctx context.Context, text string) error {
 		return ErrClipboardUnsupported
 	}
 	cmd := exec.CommandContext(ctx, "/usr/bin/pbcopy")
+	cmd.Env = clipboardEnvironment(os.Environ())
 	cmd.Stdin = strings.NewReader(text)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("không ghi được clipboard: %w", err)
 	}
 	return nil
+}
+
+func clipboardEnvironment(environ []string) []string {
+	result := make([]string, 0, len(environ)+1)
+	for _, entry := range environ {
+		name, _, _ := strings.Cut(entry, "=")
+		if name != "LC_ALL" && name != "LC_CTYPE" {
+			result = append(result, entry)
+		}
+	}
+	return append(result, "LC_CTYPE=en_US.UTF-8")
 }
 
 type SystemNotifier struct{}
