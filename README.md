@@ -297,7 +297,7 @@ truyentep/
 
 Yêu cầu macOS 12+, Xcode Command Line Tools và Go 1.22+.
 
-Trước khi phát hành, chỉ sửa `version.json`: `version` là phiên bản ứng dụng (ví dụ `0.3.0`), còn `build` là số build nguyên dương. Kịch bản build kiểm tra định dạng hai giá trị trước khi biên dịch, rồi dùng chúng cho version nhúng trong binary và metadata của app bundle.
+Trước khi phát hành, chỉ sửa `version.json`: `version` là phiên bản ứng dụng (ví dụ `0.3.0`), còn `build` phải là JSON integer trong phạm vi `1..9999`. Kịch bản build kiểm tra định dạng hai giá trị trước khi biên dịch, rồi dùng chúng cho version nhúng trong binary và metadata của app bundle.
 
 ```bash
 xcode-select --install
