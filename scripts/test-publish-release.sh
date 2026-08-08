@@ -47,6 +47,10 @@ EOF
   cat > "$repo/scripts/build-macos.sh" <<'EOF'
 #!/usr/bin/env bash
 printf 'build\n' >> "$PUBLISH_TEST_LOG"
+if [[ "${PUBLISH_TEST_BUILD_FAIL:-0}" == "1" ]]; then
+  printf 'fixture build failed\n' >&2
+  exit 42
+fi
 mkdir -p "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dist"
 archive="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dist/TruyenTep-macOS-v0.3.0.zip"
 : > "$archive"
@@ -59,6 +63,10 @@ EOF
   cat > "$fake_bin/gh" <<'EOF'
 #!/usr/bin/env bash
 printf 'gh %s\n' "$*" >> "$PUBLISH_TEST_LOG"
+if [[ "${1:-}" == "release" && "${2:-}" == "create" &&
+      "${PUBLISH_TEST_GH_FAIL:-0}" == "1" ]]; then
+  exit 41
+fi
 EOF
   chmod +x "$repo/scripts/"*.sh "$fake_bin/go" "$fake_bin/gh"
 
@@ -73,6 +81,8 @@ run_publish() {
   if (
     cd "$repo"
     PATH="$fake_bin:$PATH" PUBLISH_TEST_LOG="$command_log" \
+      PUBLISH_TEST_BUILD_FAIL="${PUBLISH_TEST_BUILD_FAIL:-0}" \
+      PUBLISH_TEST_GH_FAIL="${PUBLISH_TEST_GH_FAIL:-0}" \
       ./scripts/publish-release.sh
   ) >"$output_file" 2>&1; then
     publish_status=0
@@ -116,6 +126,65 @@ test_dirty_worktree() {
   fi
 }
 
+test_build_failure_does_not_create_tag() {
+  new_fixture
+  PUBLISH_TEST_BUILD_FAIL=1 run_publish
+  unset PUBLISH_TEST_BUILD_FAIL
+
+  if [[ "$publish_status" -ne 0 ]] &&
+    grep -q '^build$' "$command_log" &&
+    ! git -C "$repo" rev-parse --verify --quiet refs/tags/v0.3.0 >/dev/null &&
+    ! git --git-dir="$origin" rev-parse --verify --quiet refs/tags/v0.3.0 >/dev/null &&
+    ! grep -q '^gh release' "$command_log"; then
+    pass "build failure does not create or push a tag"
+  else
+    fail "build failure does not create or push a tag"
+    sed -n '1,120p' "$output_file" >&2
+    sed -n '1,120p' "$command_log" >&2
+  fi
+}
+
+test_successful_publish() {
+  new_fixture
+
+  run_publish
+  archive="$repo/dist/TruyenTep-macOS-v0.3.0.zip"
+  remote_tag_type="$(git --git-dir="$origin" cat-file -t refs/tags/v0.3.0 2>/dev/null || true)"
+
+  if [[ "$publish_status" -eq 0 ]] &&
+    [[ "$remote_tag_type" == "tag" ]] &&
+    grep -q '^go test ./\.\.\.$' "$command_log" &&
+    grep -q '^version-test$' "$command_log" &&
+    grep -q '^build$' "$command_log" &&
+    grep -Fq "gh release create v0.3.0 $archive" "$command_log" &&
+    grep -q -- '--verify-tag' "$command_log" &&
+    grep -q -- '--generate-notes' "$command_log"; then
+    pass "successful publish pushes an annotated tag and attaches the ZIP"
+  else
+    fail "successful publish pushes an annotated tag and attaches the ZIP"
+    sed -n '1,120p' "$output_file" >&2
+    sed -n '1,120p' "$command_log" >&2
+  fi
+}
+
+test_release_failure_keeps_tag_and_prints_retry() {
+  new_fixture
+  PUBLISH_TEST_GH_FAIL=1 run_publish
+  unset PUBLISH_TEST_GH_FAIL
+  remote_tag_type="$(git --git-dir="$origin" cat-file -t refs/tags/v0.3.0 2>/dev/null || true)"
+
+  if [[ "$publish_status" -ne 0 ]] &&
+    [[ "$remote_tag_type" == "tag" ]] &&
+    grep -qi 'giữ nguyên tag\|giu nguyen tag' "$output_file" &&
+    grep -q 'gh release create' "$output_file"; then
+    pass "GitHub release failure keeps the remote tag and prints a retry command"
+  else
+    fail "GitHub release failure keeps the remote tag and prints a retry command"
+    sed -n '1,160p' "$output_file" >&2
+    sed -n '1,120p' "$command_log" >&2
+  fi
+}
+
 if [[ ! -x "$publish_source" ]]; then
   printf 'FAIL: missing executable %s\n' "$publish_source" >&2
   exit 1
@@ -123,6 +192,9 @@ fi
 
 test_duplicate_remote_tag
 test_dirty_worktree
+test_build_failure_does_not_create_tag
+test_successful_publish
+test_release_failure_keeps_tag_and_prints_retry
 
 printf '\n%d passed, %d failed\n' "$passed" "$failed"
 [[ "$failed" -eq 0 ]]
