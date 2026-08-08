@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f5f5f2">
+  <title>Truyền Tệp</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Truyền Tệp">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" role="img"><path d="M7 10.5h14.5M17 6l4.5 4.5L17 15M25 21.5H10.5M15 17l-4.5 4.5L15 26"/></svg>
+        </span>
+        <div>
+          <h1>Truyền Tệp</h1>
+          <p id="self-status"><span class="status-dot"></span>Đang khởi động…</p>
+        </div>
+      </div>
+      <span class="privacy-badge">Nội bộ</span>
+    </header>
+
+    <section class="panel target-panel" aria-labelledby="target-title">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">BƯỚC 1</span>
+          <h2 id="target-title">Chọn máy nhận</h2>
+        </div>
+        <button id="refresh-button" class="icon-button" type="button" aria-label="Tìm lại máy">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>
+        </button>
+      </div>
+
+      <div id="peer-list" class="peer-list" aria-live="polite"></div>
+
+      <div id="empty-peers" class="empty-state">
+        <span class="search-rings" aria-hidden="true"><i></i><i></i><b></b></span>
+        <strong>Đang tìm máy cùng Wi‑Fi…</strong>
+        <p>Hãy mở Truyền Tệp trên máy Mac còn lại.</p>
+      </div>
+
+      <details id="manual-details" class="manual-connect">
+        <summary>Không thấy máy? Thêm bằng địa chỉ IP</summary>
+        <form id="manual-form">
+          <label for="manual-address">Địa chỉ máy nhận</label>
+          <div class="inline-form">
+            <input id="manual-address" name="address" inputmode="decimal" autocomplete="off" placeholder="192.168.1.20:8777" required>
+            <button type="submit" class="secondary-button">Kết nối</button>
+          </div>
+          <p id="own-address" class="helper"></p>
+        </form>
+      </details>
+    </section>
+
+    <section class="panel send-panel" aria-labelledby="send-title">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">BƯỚC 2</span>
+          <h2 id="send-title">Gửi</h2>
+        </div>
+        <span id="selected-label" class="selected-label">Chưa chọn máy</span>
+      </div>
+
+      <button id="clipboard-button" class="clipboard-button" type="button" disabled>
+        <span class="action-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9 5h6M9 3h6a1 1 0 0 1 1 1v2H8V4a1 1 0 0 1 1-1Z"/><path d="M8 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H16"/></svg>
+        </span>
+        <span><strong>Gửi clipboard</strong><small>Nội dung đang sao chép trên máy này</small></span>
+        <svg class="action-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+
+      <label id="drop-zone" class="drop-zone disabled" tabindex="0" aria-disabled="true">
+        <input id="file-input" type="file" multiple disabled>
+        <span class="drop-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
+        </span>
+        <span><strong>Thả tệp vào đây để gửi ngay</strong><small>Hoặc bấm để chọn tệp văn bản, tệp ZIP hay tệp khác</small></span>
+      </label>
+
+      <div id="progress-box" class="progress-box" hidden>
+        <div class="progress-copy"><strong id="progress-title">Đang gửi…</strong><span id="progress-percent">0%</span></div>
+        <div class="progress-track"><i id="progress-bar"></i></div>
+        <small id="progress-detail"></small>
+      </div>
+    </section>
+
+    <section id="history-section" class="history-section" aria-labelledby="history-title" hidden>
+      <div class="history-heading">
+        <h2 id="history-title">Gần đây</h2>
+      </div>
+      <ol id="event-list" class="event-list"></ol>
+    </section>
+
+    <footer>
+      <p>Dữ liệu đi thẳng giữa các máy trong mạng nội bộ.</p>
+      <div class="footer-actions">
+        <button id="downloads-button" type="button">Mở thư mục nhận</button>
+        <span aria-hidden="true">·</span>
+        <button id="quit-button" type="button">Dừng Truyền Tệp</button>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="quit-dialog">
+    <form method="dialog">
+      <h2>Dừng Truyền Tệp?</h2>
+      <p>Máy khác sẽ không thể gửi dữ liệu đến máy này cho đến khi bạn mở lại ứng dụng.</p>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary-button">Hủy</button>
+        <button id="confirm-quit" value="confirm" class="danger-button">Dừng ứng dụng</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
+

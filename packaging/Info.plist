@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>vi</string>
+  <key>CFBundleDisplayName</key>
+  <string>Truyền Tệp</string>
+  <key>CFBundleExecutable</key>
+  <string>truyentep</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.chuongtran.truyentep</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>TruyenTep</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.2.0</string>
+  <key>CFBundleVersion</key>
+  <string>2</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>12.0</string>
+  <key>LSUIElement</key>
+  <true/>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>Truyền Tệp cần truy cập mạng nội bộ để tìm và gửi dữ liệu trực tiếp giữa các máy Mac của bạn.</string>
+</dict>
+</plist>
