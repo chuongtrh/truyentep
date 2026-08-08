@@ -116,6 +116,22 @@ unknown_field_json="$TMP_DIR/unknown-field.json"
 write_fixture "$unknown_field_json" '{"version":"1.2.3","build":3,"extra":true}'
 assert_rejected "unknown config fields are forbidden" "$unknown_field_json"
 
+wrong_case_key_json="$TMP_DIR/wrong-case-key.json"
+write_fixture "$wrong_case_key_json" '{"Version":"9.8.7","build":3}'
+assert_rejected "config keys are case-sensitive" "$wrong_case_key_json"
+
+duplicate_version_json="$TMP_DIR/duplicate-version.json"
+write_fixture "$duplicate_version_json" '{"version":"1.2.3","version":"9.8.7","build":3}'
+assert_rejected "duplicate version key is forbidden" "$duplicate_version_json"
+
+duplicate_build_json="$TMP_DIR/duplicate-build.json"
+write_fixture "$duplicate_build_json" '{"version":"1.2.3","build":3,"build":4}'
+assert_rejected "duplicate build key is forbidden" "$duplicate_build_json"
+
+escaped_duplicate_key_json="$TMP_DIR/escaped-duplicate-key.json"
+write_fixture "$escaped_duplicate_key_json" '{"version":"1.2.3","\u0076ersion":"9.8.7","build":3}'
+assert_rejected "escaped duplicate key is forbidden after decoding" "$escaped_duplicate_key_json"
+
 multiple_values_json="$TMP_DIR/multiple-values.json"
 write_fixture "$multiple_values_json" '{"version":"1.2.3","build":3} {"version":"4.5.6","build":7}'
 assert_rejected "multiple top-level JSON values are forbidden" "$multiple_values_json"

@@ -9,8 +9,8 @@ import (
 )
 
 type versionConfig struct {
-	Version *string `json:"version"`
-	Build   *int64  `json:"build"`
+	Version *string
+	Build   *int64
 }
 
 var canonicalVersion = regexp.MustCompile("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$")
@@ -18,6 +18,62 @@ var canonicalVersion = regexp.MustCompile("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.
 func fail(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "Lỗi phiên bản: "+format+"\n", args...)
 	os.Exit(1)
+}
+
+func decodeConfig(decoder *json.Decoder) versionConfig {
+	token, err := decoder.Token()
+	if err != nil {
+		fail("JSON không hợp lệ: %v", err)
+	}
+	opening, ok := token.(json.Delim)
+	if !ok || opening != '{' {
+		fail("config phải là một JSON object.")
+	}
+
+	config := versionConfig{}
+	seen := make(map[string]bool)
+	for decoder.More() {
+		token, err = decoder.Token()
+		if err != nil {
+			fail("JSON không hợp lệ: %v", err)
+		}
+		key, ok := token.(string)
+		if !ok {
+			fail("key trong config phải là chuỗi.")
+		}
+		if seen[key] {
+			fail("key %q bị lặp trong config.", key)
+		}
+		seen[key] = true
+
+		switch key {
+		case "version":
+			var version string
+			if err := decoder.Decode(&version); err != nil {
+				fail("trường version phải là chuỗi: %v", err)
+			}
+			config.Version = &version
+		case "build":
+			var build int64
+			if err := decoder.Decode(&build); err != nil {
+				fail("trường build phải là số nguyên: %v", err)
+			}
+			config.Build = &build
+		default:
+			fail("key %q không được hỗ trợ.", key)
+		}
+	}
+
+	token, err = decoder.Token()
+	if err != nil {
+		fail("JSON không hợp lệ: %v", err)
+	}
+	closing, ok := token.(json.Delim)
+	if !ok || closing != '}' {
+		fail("config phải kết thúc bằng dấu }.")
+	}
+
+	return config
 }
 
 func main() {
@@ -33,12 +89,7 @@ func main() {
 	defer configFile.Close()
 
 	decoder := json.NewDecoder(configFile)
-	decoder.DisallowUnknownFields()
-
-	var config versionConfig
-	if err := decoder.Decode(&config); err != nil {
-		fail("JSON không hợp lệ: %v", err)
-	}
+	config := decodeConfig(decoder)
 
 	var extra json.RawMessage
 	if err := decoder.Decode(&extra); err != io.EOF {
