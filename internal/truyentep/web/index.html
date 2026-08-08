@@ -17,16 +17,21 @@
         </span>
         <div>
           <h1>Truyền Tệp</h1>
-          <p id="self-status"><span class="status-dot"></span>Đang khởi động…</p>
         </div>
       </div>
-      <span class="privacy-badge">Nội bộ</span>
+      <div class="app-status" aria-label="Trạng thái ứng dụng">
+        <p id="self-status" class="status-capsule"><span class="status-dot" aria-hidden="true"></span>Đang khởi động…</p>
+        <span class="status-capsule privacy-badge">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 7V5.5a3.5 3.5 0 0 1 7 0V7M3.5 7h9v6.5h-9z"/></svg>
+          Nội bộ
+        </span>
+      </div>
     </header>
 
     <section class="panel target-panel" aria-labelledby="target-title">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">BƯỚC 1</span>
+          <span class="step-number" aria-hidden="true">1</span>
           <h2 id="target-title">Chọn máy nhận</h2>
         </div>
         <button id="refresh-button" class="icon-button" type="button" aria-label="Tìm lại máy">
@@ -58,27 +63,31 @@
     <section class="panel send-panel" aria-labelledby="send-title">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">BƯỚC 2</span>
+          <span class="step-number" aria-hidden="true">2</span>
           <h2 id="send-title">Gửi</h2>
         </div>
         <span id="selected-label" class="selected-label">Chưa chọn máy</span>
       </div>
 
-      <button id="clipboard-button" class="clipboard-button" type="button" disabled>
-        <span class="action-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M9 5h6M9 3h6a1 1 0 0 1 1 1v2H8V4a1 1 0 0 1 1-1Z"/><path d="M8 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H16"/></svg>
-        </span>
-        <span><strong>Gửi clipboard</strong><small>Nội dung đang sao chép trên máy này</small></span>
-        <svg class="action-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-      </button>
+      <p id="action-hint">Chọn một máy nhận để bật các lựa chọn gửi.</p>
 
-      <label id="drop-zone" class="drop-zone disabled" tabindex="0" aria-disabled="true">
-        <input id="file-input" type="file" multiple disabled>
-        <span class="drop-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
-        </span>
-        <span><strong>Thả tệp vào đây để gửi ngay</strong><small>Hoặc bấm để chọn tệp văn bản, tệp ZIP hay tệp khác</small></span>
-      </label>
+      <div class="action-grid">
+        <button id="clipboard-button" class="clipboard-button" type="button" aria-describedby="action-hint" disabled>
+          <span class="action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M9 5h6M9 3h6a1 1 0 0 1 1 1v2H8V4a1 1 0 0 1 1-1Z"/><path d="M8 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H16"/></svg>
+          </span>
+          <span><strong>Gửi clipboard</strong><small>Nội dung đang sao chép trên máy này</small></span>
+          <svg class="action-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+
+        <label id="drop-zone" class="drop-zone disabled" tabindex="0" aria-disabled="true" aria-describedby="action-hint file-action-description">
+          <input id="file-input" type="file" multiple disabled>
+          <span class="drop-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>
+          </span>
+          <span><strong>Gửi tệp</strong><small id="file-action-description">Thả tệp vào đây hoặc bấm để chọn tệp văn bản, tệp ZIP hay tệp khác</small></span>
+        </label>
+      </div>
 
       <div id="progress-box" class="progress-box" hidden>
         <div class="progress-copy"><strong id="progress-title">Đang gửi…</strong><span id="progress-percent">0%</span></div>
@@ -119,4 +128,3 @@
   <script src="/app.js" defer></script>
 </body>
 </html>
-
