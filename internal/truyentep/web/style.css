@@ -904,6 +904,12 @@ footer {
   line-height: 1.45;
 }
 
+.app-version {
+  margin-top: 4px;
+  color: var(--label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
 .footer-actions {
   justify-content: center;
   gap: 6px;

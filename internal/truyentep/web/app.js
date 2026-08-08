@@ -20,6 +20,7 @@ const ui = {
   manualAddress: document.querySelector("#manual-address"),
   ownAddress: document.querySelector("#own-address"),
   refreshButton: document.querySelector("#refresh-button"),
+  appVersion: document.querySelector("#app-version"),
   downloadsButton: document.querySelector("#downloads-button"),
   quitButton: document.querySelector("#quit-button"),
   quitDialog: document.querySelector("#quit-dialog"),
@@ -91,6 +92,7 @@ function render() {
   const dot = document.createElement("span");
   dot.className = "status-dot";
   ui.selfStatus.append(dot, document.createTextNode(`Đang chạy trên ${state.self.name}`));
+  ui.appVersion.textContent = `Phiên bản ${state.version || "dev"}`;
 
   const peers = state.peers || [];
   if (!peers.some((peer) => peer.id === selectedPeerId)) {
