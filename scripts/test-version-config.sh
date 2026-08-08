@@ -41,6 +41,25 @@ assert_output() {
   fi
 }
 
+assert_structurally_valid_output() {
+  name=$1
+  shift
+
+  "$@" >"$TMP_DIR/stdout" 2>"$TMP_DIR/stderr"
+  status=$?
+  output=$(<"$TMP_DIR/stdout")
+  canonical_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)	([1-9][0-9]{0,3})$'
+  printf '%s\n' "$output" >"$TMP_DIR/expected"
+  if [ "$status" -eq 0 ] &&
+    [ ! -s "$TMP_DIR/stderr" ] &&
+    cmp -s "$TMP_DIR/expected" "$TMP_DIR/stdout" &&
+    [[ "$output" =~ $canonical_pattern ]]; then
+    pass "$name"
+  else
+    fail "$name (status=$status, output=$(tr '\n' ' ' < "$TMP_DIR/stdout"), stderr=$(tr '\n' ' ' < "$TMP_DIR/stderr"))"
+  fi
+}
+
 assert_rejected() {
   name=$1
   path=$2
@@ -62,7 +81,13 @@ write_fixture() {
   printf '%s\n' "$contents" > "$path"
 }
 
-assert_output "real config defaults to repository version.json" "$(printf '0.3.0\t3')" "$READER"
+assert_structurally_valid_output "real config defaults to a structurally valid version.json" "$READER"
+
+alternate_root="$TMP_DIR/alternate-version-root"
+mkdir -p "$alternate_root/scripts"
+cp "$READER" "$SCRIPT_DIR/read-version.go" "$alternate_root/scripts/"
+write_fixture "$alternate_root/version.json" '{"version":"9.8.7","build":321}'
+assert_output "default reader follows version.json as the single source" "$(printf '9.8.7\t321')" "$alternate_root/scripts/read-version.sh"
 
 valid_path="$TMP_DIR/path with spaces/valid.json"
 mkdir -p "$(dirname -- "$valid_path")"
@@ -74,6 +99,26 @@ assert_rejected "missing config file" "$TMP_DIR/missing.json"
 malformed="$TMP_DIR/malformed.json"
 write_fixture "$malformed" '{"version":"1.2.3","build":'
 assert_rejected "malformed JSON" "$malformed"
+
+comment_json="$TMP_DIR/comment.json"
+write_fixture "$comment_json" '{/*comment*/"version":"1.2.3","build":3}'
+assert_rejected "JSON comments are forbidden" "$comment_json"
+
+trailing_comma_json="$TMP_DIR/trailing-comma.json"
+write_fixture "$trailing_comma_json" '{"version":"1.2.3","build":3,}'
+assert_rejected "JSON trailing comma is forbidden" "$trailing_comma_json"
+
+unary_plus_json="$TMP_DIR/unary-plus.json"
+write_fixture "$unary_plus_json" '{"version":"1.2.3","build":+3}'
+assert_rejected "JSON unary plus is forbidden" "$unary_plus_json"
+
+unknown_field_json="$TMP_DIR/unknown-field.json"
+write_fixture "$unknown_field_json" '{"version":"1.2.3","build":3,"extra":true}'
+assert_rejected "unknown config fields are forbidden" "$unknown_field_json"
+
+multiple_values_json="$TMP_DIR/multiple-values.json"
+write_fixture "$multiple_values_json" '{"version":"1.2.3","build":3} {"version":"4.5.6","build":7}'
+assert_rejected "multiple top-level JSON values are forbidden" "$multiple_values_json"
 
 xml_plist="$TMP_DIR/version.plist"
 write_fixture "$xml_plist" '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>version</key><string>1.2.3</string><key>build</key><integer>3</integer></dict></plist>'
