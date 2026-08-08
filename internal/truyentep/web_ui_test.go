@@ -42,3 +42,34 @@ func TestWebUISemanticContract(t *testing.T) {
 		t.Error("web UI must not load assets over http:// or https://")
 	}
 }
+
+func TestWebUIInteractionContract(t *testing.T) {
+	script, err := webAssets.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatalf("read embedded web UI script: %v", err)
+	}
+
+	js := string(script)
+	contracts := []struct {
+		name    string
+		pattern string
+	}{
+		{"action hint DOM reference", `actionHint\s*:\s*document\.querySelector\("#action-hint"\)`},
+		{"action hint rendering", `ui\.actionHint\.textContent\s*=`},
+		{"concurrent state load tracking", `stateLoadsInFlight\s*\+=\s*1`},
+		{"refresh loading class", `ui\.refreshButton\.classList\.toggle\("loading",\s*loading\)`},
+		{"refresh busy state", `ui\.refreshButton\.setAttribute\("aria-busy",\s*loading\s*\?\s*"true"\s*:\s*"false"\)`},
+		{"peer presence decoration", `presence\.className\s*=\s*"peer-presence"`},
+		{"safe SVG event icon", `document\.createElementNS\(SVG_NAMESPACE,\s*"svg"\)`},
+		{"event icon selection", `createEventIcon\(event\)`},
+	}
+	for _, contract := range contracts {
+		if !regexp.MustCompile(contract.pattern).MatchString(js) {
+			t.Errorf("web UI script is missing %s", contract.name)
+		}
+	}
+
+	if strings.Contains(js, `icon.textContent = event.kind`) {
+		t.Error("history events must use SVG icons instead of textual symbols")
+	}
+}
