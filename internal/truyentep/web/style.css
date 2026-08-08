@@ -12,14 +12,15 @@
   --separator: rgba(60, 60, 67, 0.14);
   --separator-strong: rgba(60, 60, 67, 0.25);
   --accent: #006edb;
+  --accent-label: #006bd4;
   --accent-soft: #e9f3ff;
   --accent-separator: rgba(0, 110, 219, 0.28);
   --destructive: #c5322d;
   --destructive-hover: #ad2925;
   --destructive-soft: #fff0ef;
-  --destructive-focus-ring: rgba(197, 50, 45, 0.34);
+  --destructive-focus-ring: #c5322d;
   --online: #30a46c;
-  --focus-ring: rgba(0, 122, 255, 0.38);
+  --focus-ring: #006edb;
   --radius-small: 10px;
   --radius-medium: 14px;
   --radius-large: 20px;
@@ -236,7 +237,7 @@ p {
   flex: 0 0 24px;
   place-items: center;
   border-radius: 50%;
-  color: var(--accent);
+  color: var(--accent-label);
   background: var(--accent-soft);
   font-size: 11px;
   font-weight: 750;
@@ -338,7 +339,7 @@ p {
   place-items: center;
   border: 1px solid var(--accent-separator);
   border-radius: 50%;
-  color: var(--accent);
+  color: var(--accent-label);
   background: var(--material-elevated);
   font-size: 14px;
   font-weight: 720;
@@ -515,7 +516,7 @@ p {
 }
 
 .manual-connect summary:hover {
-  color: var(--accent);
+  color: var(--accent-label);
 }
 
 .manual-connect form {
@@ -569,7 +570,7 @@ input::placeholder {
   padding: 1px 2px;
   border: 0;
   border-radius: 4px;
-  color: var(--accent);
+  color: var(--accent-label);
   background: none;
   cursor: pointer;
 }
@@ -580,7 +581,7 @@ input::placeholder {
   overflow: hidden;
   border: 1px solid var(--accent-separator);
   border-radius: var(--radius-pill);
-  color: var(--accent);
+  color: var(--accent-label);
   background: var(--accent-soft);
   font-size: 10.5px;
   font-weight: 620;
@@ -656,7 +657,7 @@ input::placeholder {
   flex: 0 0 40px;
   place-items: center;
   border-radius: 12px;
-  color: var(--accent);
+  color: var(--accent-label);
   background: var(--accent-soft);
   box-shadow: inset 0 0 0 1px var(--accent-separator);
 }
@@ -833,7 +834,7 @@ input::placeholder {
   height: 32px;
   place-items: center;
   border-radius: 10px;
-  color: var(--accent);
+  color: var(--accent-label);
   background: var(--accent-soft);
   font-size: 12px;
   font-weight: 700;
@@ -908,7 +909,7 @@ footer {
 }
 
 .footer-actions button:hover {
-  color: var(--accent);
+  color: var(--accent-label);
 }
 
 .secondary-button,
@@ -1142,14 +1143,15 @@ input:user-invalid:focus-visible {
     --separator: rgba(255, 255, 255, 0.11);
     --separator-strong: rgba(255, 255, 255, 0.2);
     --accent: #69aefc;
+    --accent-label: #69aefc;
     --accent-soft: rgba(72, 149, 239, 0.16);
     --accent-separator: rgba(105, 174, 252, 0.32);
     --destructive: #ff6b66;
     --destructive-hover: #ff817d;
     --destructive-soft: rgba(255, 107, 102, 0.13);
-    --destructive-focus-ring: rgba(255, 107, 102, 0.44);
+    --destructive-focus-ring: #ff6b66;
     --online: #4bc486;
-    --focus-ring: rgba(105, 174, 252, 0.48);
+    --focus-ring: #69aefc;
     --shadow-panel:
       0 0 0 0.5px rgba(255, 255, 255, 0.025),
       0 2px 8px rgba(0, 0, 0, 0.18),
