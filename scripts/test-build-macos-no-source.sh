@@ -2,21 +2,44 @@
 set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+version_values=""
+release_root=""
+archive=""
+
+cleanup() {
+  if [[ -n "${version_values:-}" ]]; then
+    rm -f -- "$version_values"
+  fi
+  if [[ -n "${release_root:-}" ]]; then
+    rm -rf -- "$release_root"
+  fi
+  if [[ -n "${archive:-}" ]]; then
+    rm -f -- "$archive"
+  fi
+}
+
+handle_signal() {
+  signal_status="$1"
+  trap - EXIT HUP INT TERM
+  cleanup
+  exit "$signal_status"
+}
+
 version_values="$(mktemp "${TMPDIR:-/tmp}/truyentep-build-version.XXXXXX")"
+trap cleanup EXIT
+trap 'handle_signal 129' HUP
+trap 'handle_signal 130' INT
+trap 'handle_signal 143' TERM
+
 "$project_root/scripts/read-version.sh" > "$version_values"
 IFS="$(printf '\t')" read -r version build < "$version_values"
-rm -f "$version_values"
+rm -f -- "$version_values"
+version_values=""
 
 artifact_suffix="-no-source-test"
 release_root="$project_root/dist/TruyenTep-macOS-v$version$artifact_suffix"
 archive="$release_root.zip"
 app_path="$release_root/Truyền Tệp.app"
-
-cleanup() {
-  rm -rf "$release_root"
-  rm -f "$archive"
-}
-trap cleanup EXIT
 
 TRUYEN_TEP_ARTIFACT_SUFFIX="$artifact_suffix" "$project_root/scripts/build-macos.sh" >/dev/null
 
